@@ -1,1 +1,1432 @@
-Placeholder - Gui webapp
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SonosBridge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #1db954;
+  --green-light: #e8f9ee;
+  --green-dim: rgba(29,185,84,.12);
+  --white: #ffffff;
+  --off: #f7f7f5;
+  --g100: #f0efeb;
+  --g200: #e4e2db;
+  --g300: #cbc9c0;
+  --g400: #a8a69d;
+  --g500: #7a7872;
+  --g700: #3e3d39;
+  --g900: #1a1916;
+  --red: #e24b4a;
+  --red-light: #fef0f0;
+  --amber: #f59e0b;
+  --amber-light: #fffbeb;
+  --blue: #3b82f6;
+  --blue-light: #eff6ff;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-xs: 6px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+  --shadow: 0 2px 8px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --font: 'DM Sans', -apple-system, sans-serif;
+  --mono: 'DM Mono', monospace;
+  --trans: .15s cubic-bezier(.4,0,.2,1);
+}
+
+body {
+  font-family: var(--font);
+  background: var(--off);
+  color: var(--g900);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* ─── LAYOUT ─── */
+.shell {
+  max-width: 440px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 0 0 0.5px var(--g200);
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 0.5px solid var(--g200);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  background: var(--green);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.brand-mark svg { width: 16px; height: 16px; }
+.brand-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.3px;
+  color: var(--g900);
+}
+.brand-name span { color: var(--green); }
+
+.status-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--g100);
+  border: 0.5px solid var(--g200);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--g500);
+  transition: var(--trans);
+  cursor: pointer;
+  user-select: none;
+}
+.status-chip.streaming { background: var(--green-dim); border-color: rgba(29,185,84,.25); color: #0f7a36; }
+.status-chip.warning { background: var(--amber-light); border-color: rgba(245,158,11,.3); color: #92610a; }
+.pulse {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--g300);
+  flex-shrink: 0;
+}
+.pulse.active {
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(29,185,84,.5);
+  animation: pulse 1.8s infinite;
+}
+.pulse.warn { background: var(--amber); }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(29,185,84,.5); }
+  70% { box-shadow: 0 0 0 5px rgba(29,185,84,0); }
+  100% { box-shadow: 0 0 0 0 rgba(29,185,84,0); }
+}
+
+/* ─── VIEWS ─── */
+.view { display: none; flex: 1; flex-direction: column; overflow-y: auto; }
+.view.active { display: flex; }
+
+/* ─── SECTION LABELS ─── */
+.sec-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--g400);
+  padding: 18px 18px 7px;
+}
+
+/* ─── CARD LISTS ─── */
+.card-list {
+  margin: 0 14px 10px;
+  background: var(--white);
+  border: 0.5px solid var(--g200);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.card-row {
+  display: flex;
+  align-items: center;
+  padding: 13px 15px;
+  gap: 12px;
+  cursor: pointer;
+  transition: background var(--trans);
+  position: relative;
+}
+.card-row:hover { background: var(--off); }
+.card-row:active { background: var(--g100); }
+.card-row + .card-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 15px; right: 15px;
+  height: 0.5px;
+  background: var(--g200);
+}
+
+/* ─── ICONS ─── */
+.row-icon {
+  width: 38px; height: 38px;
+  border-radius: var(--radius-sm);
+  background: var(--g100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.row-icon svg { width: 19px; height: 19px; stroke: var(--g500); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.row-icon.green { background: var(--green-light); }
+.row-icon.green svg { stroke: var(--green); }
+.row-icon.red { background: var(--red-light); }
+.row-icon.red svg { stroke: var(--red); }
+
+.row-body { flex: 1; min-width: 0; }
+.row-title { font-size: 14px; font-weight: 500; color: var(--g900); }
+.row-sub { font-size: 12px; color: var(--g400); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.chevron { color: var(--g300); flex-shrink: 0; }
+
+/* ─── CHECKBOXES ─── */
+.check {
+  width: 23px; height: 23px;
+  border-radius: 50%;
+  border: 1.5px solid var(--g300);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--trans);
+}
+.check.on { background: var(--green); border-color: var(--green); }
+.check svg { width: 11px; height: 11px; stroke: transparent; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.check.on svg { stroke: white; }
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 13px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: var(--font);
+  letter-spacing: -.1px;
+  cursor: pointer;
+  border: none;
+  transition: all var(--trans);
+  white-space: nowrap;
+}
+.btn:active { transform: scale(.97); }
+.btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.btn-green { background: var(--green); color: white; }
+.btn-green:hover { background: #18a847; }
+.btn-green:disabled { background: var(--g200); color: var(--g400); cursor: not-allowed; transform: none; }
+
+.btn-outline { background: transparent; color: var(--g700); border: 0.5px solid var(--g200); }
+.btn-outline:hover { background: var(--off); }
+
+.btn-ghost { background: transparent; color: var(--g500); border: none; padding-left: 8px; padding-right: 8px; }
+.btn-ghost:hover { color: var(--g700); background: var(--g100); }
+
+.btn-danger { background: var(--red-light); color: var(--red); border: 0.5px solid rgba(226,75,74,.2); }
+.btn-danger:hover { background: #fde8e8; }
+
+.btn-row {
+  display: flex;
+  gap: 9px;
+  padding: 10px 14px 14px;
+}
+.btn-row .btn { flex: 1; }
+
+/* ─── SELECTION BAR ─── */
+.sel-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px 14px 10px;
+  padding: 9px 13px;
+  background: var(--green-dim);
+  border: 0.5px solid rgba(29,185,84,.2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: #0f7a36;
+}
+.sel-bar svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* ─── NOW PLAYING CARD ─── */
+.np-card {
+  margin: 10px 14px;
+  background: var(--white);
+  border: 0.5px solid var(--g200);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.np-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 15px;
+}
+.np-art {
+  width: 52px; height: 52px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(145deg, #1db954, #0d7a38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.np-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, transparent 60%);
+}
+.np-art svg { width: 24px; height: 24px; fill: white; position: relative; z-index: 1; }
+.np-meta { flex: 1; }
+.np-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-bottom: 2px; }
+.np-title { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+.np-source { font-size: 12px; color: var(--g400); }
+
+.np-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--g100);
+  color: var(--g500);
+}
+.badge.green { background: var(--green-light); color: #0f7a36; }
+.badge.amber { background: var(--amber-light); color: #92610a; }
+.badge svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+/* ─── VOLUME SLIDERS ─── */
+.vol-section { margin-top: 2px; }
+.vol-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+.vol-name { font-size: 12.5px; color: var(--g500); min-width: 88px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vol-name.group { font-weight: 600; color: var(--g700); }
+.vol-track { flex: 1; position: relative; height: 4px; }
+input[type=range] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--g200);
+  cursor: pointer;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--g900);
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform var(--trans);
+}
+input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.2); }
+input[type=range]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--g900);
+  border: none;
+}
+.vol-val { font-size: 12px; font-family: var(--mono); font-weight: 500; color: var(--g700); min-width: 30px; text-align: right; }
+.vol-divider { height: 0.5px; background: var(--g200); margin: 6px 0; }
+
+/* ─── CHIPS ─── */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 12px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: var(--g100);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--g500);
+  border: 0.5px solid transparent;
+}
+.chip.active { background: var(--green-light); color: #0f7a36; border-color: rgba(29,185,84,.2); }
+.chip svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ─── STAT GRID ─── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 7px;
+  padding: 2px 14px 12px;
+}
+.stat-cell {
+  background: var(--off);
+  border: 0.5px solid var(--g200);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  text-align: center;
+}
+.stat-label { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--g400); margin-bottom: 4px; }
+.stat-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--g900);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.stat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── BOTTOM NAV ─── */
+.nav {
+  display: flex;
+  border-top: 0.5px solid var(--g200);
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 4px 11px;
+  cursor: pointer;
+  color: var(--g300);
+  transition: color var(--trans);
+  border: none;
+  background: transparent;
+  font-family: var(--font);
+}
+.nav-tab.active { color: var(--green); }
+.nav-tab svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.nav-tab span { font-size: 10px; font-weight: 500; letter-spacing: .02em; }
+
+/* ─── MODAL SHEET ─── */
+.sheet-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.3);
+  z-index: 100;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet-backdrop.open { display: flex; }
+.sheet {
+  background: var(--white);
+  border-radius: var(--radius) var(--radius) 0 0;
+  width: 100%;
+  max-width: 440px;
+  padding-bottom: max(env(safe-area-inset-bottom), 20px);
+  box-shadow: 0 -4px 24px rgba(0,0,0,.12);
+  animation: sheetIn .22s cubic-bezier(.32,0,.15,1);
+}
+@keyframes sheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-handle { width: 36px; height: 4px; background: var(--g200); border-radius: 2px; margin: 10px auto 16px; }
+.sheet-title { font-size: 16px; font-weight: 600; padding: 0 18px 13px; letter-spacing: -.2px; }
+.sheet-body { padding: 0 14px; }
+.sheet-body p { font-size: 13.5px; color: var(--g500); line-height: 1.55; margin-bottom: 14px; padding: 0 2px; }
+
+/* ─── SCANNING ANIMATION ─── */
+.scan-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px;
+}
+.scan-ring {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--g200);
+  border-top-color: var(--green);
+  animation: spin .9s linear infinite;
+  margin-bottom: 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.scan-text { font-size: 13.5px; color: var(--g400); text-align: center; }
+
+/* ─── PAIRING ─── */
+.pair-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 24px;
+  text-align: center;
+}
+.pair-icon {
+  width: 68px; height: 68px;
+  border-radius: 50%;
+  background: var(--g100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.pair-icon svg { width: 32px; height: 32px; stroke: var(--g500); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.pair-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; letter-spacing: -.2px; }
+.pair-sub { font-size: 13px; color: var(--g400); line-height: 1.55; max-width: 280px; }
+.pair-name-box {
+  display: inline-block;
+  background: var(--off);
+  border: 0.5px solid var(--g200);
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--mono);
+  letter-spacing: .5px;
+  margin: 14px 0 4px;
+  color: var(--g900);
+}
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--g900);
+  color: white;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity .2s, transform .2s;
+  pointer-events: none;
+  z-index: 999;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── SETTINGS ─── */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 15px;
+  border-bottom: 0.5px solid var(--g100);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-left { flex: 1; }
+.setting-title { font-size: 14px; font-weight: 500; }
+.setting-sub { font-size: 12px; color: var(--g400); margin-top: 1px; }
+
+.toggle {
+  width: 42px; height: 25px;
+  border-radius: 13px;
+  background: var(--g200);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--trans);
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--green); }
+.toggle::after {
+  content: '';
+  width: 21px; height: 21px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: left var(--trans);
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.toggle.on::after { left: 19px; }
+
+/* ─── WARNING BANNER ─── */
+.warn-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 14px 10px;
+  padding: 11px 13px;
+  background: var(--amber-light);
+  border: 0.5px solid rgba(245,158,11,.3);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  color: #92610a;
+  line-height: 1.45;
+}
+.warn-banner svg { width: 15px; height: 15px; stroke: var(--amber); fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; margin-top: 1px; }
+
+/* ─── ABOUT / SETTINGS ─── */
+.about-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px 20px;
+  text-align: center;
+}
+.about-logo {
+  width: 64px; height: 64px;
+  background: var(--green);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.about-logo svg { width: 32px; height: 32px; }
+.about-title { font-size: 20px; font-weight: 600; letter-spacing: -.4px; margin-bottom: 3px; }
+.about-version { font-size: 12px; color: var(--g400); font-family: var(--mono); }
+
+/* ─── MISC ─── */
+.divider { height: 0.5px; background: var(--g100); margin: 4px 14px; }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+.empty-state svg { width: 44px; height: 44px; stroke: var(--g300); fill: none; stroke-width: 1.4; margin-bottom: 12px; }
+.empty-state p { font-size: 13px; color: var(--g400); line-height: 1.5; }
+.fw { width: 100%; }
+.spacer { height: 16px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="3" fill="white"/>
+          <path d="M4 8a4 4 0 0 1 4-4" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M12 8a4 4 0 0 1-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M2 8a6 6 0 0 1 6-6" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity=".5"/>
+          <path d="M14 8a6 6 0 0 1-6 6" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity=".5"/>
+        </svg>
+      </div>
+      <span class="brand-name">Sonos<span>Bridge</span></span>
+    </div>
+    <div class="status-chip" id="topChip" onclick="goTab('stream')">
+      <div class="pulse" id="topPulse"></div>
+      <span id="topChipText">Idle</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       VIEW: SPEAKERS
+  ══════════════════════════════════════ -->
+  <div class="view active" id="viewSpeakers">
+    <div class="sec-label">Rooms on your network</div>
+    <div class="card-list" id="roomList"></div>
+
+    <div class="sel-bar" id="selBar" style="display:none">
+      <svg viewBox="0 0 14 14"><polyline points="2,7 6,11 12,3"/></svg>
+      <span id="selBarText">0 room(s) selected</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-green fw" id="btnStream" disabled onclick="startStreaming()">
+        <svg viewBox="0 0 16 16"><polygon points="5,3 13,8 5,13" fill="currentColor"/></svg>
+        Start streaming
+      </button>
+    </div>
+
+    <div class="sec-label">Device</div>
+    <div class="card-list">
+      <div class="card-row" onclick="showSheet('sheetScan')">
+        <div class="row-icon">
+          <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="2.5"/><path d="M6 10a4 4 0 0 1 4-4m0 8a4 4 0 0 0 4-4"/><path d="M3 10a7 7 0 0 1 7-7m0 14a7 7 0 0 0 7-7"/></svg>
+        </div>
+        <div class="row-body">
+          <div class="row-title">Scan for speakers</div>
+          <div class="row-sub">Discover UPnP/DLNA on LAN</div>
+        </div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,4 10,8 6,12"/></svg>
+      </div>
+      <div class="card-row" onclick="showSheet('sheetPair')">
+        <div class="row-icon">
+          <svg viewBox="0 0 20 20"><path d="M7 4l2 2-2 2M9 6h5a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8"/><path d="M4 10h2"/></svg>
+        </div>
+        <div class="row-body">
+          <div class="row-title">Bluetooth pairing</div>
+          <div class="row-sub" id="btPairSub">No device paired</div>
+        </div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,4 10,8 6,12"/></svg>
+      </div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       VIEW: STREAM
+  ══════════════════════════════════════ -->
+  <div class="view" id="viewStream">
+
+    <!-- IDLE STATE -->
+    <div id="streamIdle">
+      <div class="empty-state" style="padding-top: 60px;">
+        <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="14" stroke-dasharray="4 3"/><circle cx="22" cy="22" r="6"/><circle cx="22" cy="22" r="2" fill="var(--g300)" stroke="none"/></svg>
+        <p>No stream active.<br>Select rooms and tap <strong>Start streaming</strong>.</p>
+      </div>
+    </div>
+
+    <!-- ACTIVE STATE -->
+    <div id="streamActive" style="display:none">
+      <div class="np-card">
+        <div class="np-header">
+          <div class="np-art">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <div class="np-meta">
+            <div class="np-eyebrow">Streaming</div>
+            <div class="np-title">Android audio</div>
+            <div class="np-source" id="npSource">Any app · via Bluetooth</div>
+          </div>
+        </div>
+        <div class="np-badges" id="npBadges"></div>
+        <div class="vol-section" id="volSection"></div>
+      </div>
+
+      <div class="sec-label">Streaming to</div>
+      <div class="chips" id="activeChips"></div>
+
+      <div class="sec-label">Status</div>
+      <div class="stat-grid">
+        <div class="stat-cell">
+          <div class="stat-label">Bluetooth</div>
+          <div class="stat-val" id="statBt"><div class="stat-dot" style="background:var(--green)"></div>Connected</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">WiFi</div>
+          <div class="stat-val" id="statWifi"><div class="stat-dot" style="background:var(--green)"></div>Online</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Sync</div>
+          <div class="stat-val" id="statSync"><div class="stat-dot" style="background:var(--green)"></div>OK</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-danger fw" onclick="stopStreaming()">
+          <svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" stroke="none"/></svg>
+          Stop streaming
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════
+       VIEW: SETTINGS
+  ══════════════════════════════════════ -->
+  <div class="view" id="viewSettings">
+    <div class="about-hero">
+      <div class="about-logo">
+        <svg viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="5" fill="white"/>
+          <path d="M9 16a7 7 0 0 1 7-7" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M23 16a7 7 0 0 1-7 7" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M5 16A11 11 0 0 1 16 5" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity=".5"/>
+          <path d="M27 16A11 11 0 0 1 16 27" stroke="white" stroke-width="2.2" stroke-linecap="round" opacity=".5"/>
+        </svg>
+      </div>
+      <div class="about-title">SonosBridge</div>
+      <div class="about-version">v0.9.0-beta · ESP32-S3</div>
+    </div>
+
+    <div class="sec-label">Audio</div>
+    <div class="card-list">
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-title">Stream format</div>
+          <div class="setting-sub">PCM 44.1 kHz · 16-bit stereo</div>
+        </div>
+        <span style="font-size:12px;color:var(--g400);font-family:var(--mono)">SBC/AAC</span>
+      </div>
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-title">Auto-resume on reconnect</div>
+          <div class="setting-sub">Resume last session after BT reconnect</div>
+        </div>
+        <div class="toggle on" id="tgl1" onclick="toggleSetting('tgl1')"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-title">Volume sync</div>
+          <div class="setting-sub">Always read live volume before setting</div>
+        </div>
+        <div class="toggle on" id="tgl2" onclick="toggleSetting('tgl2')"></div>
+      </div>
+    </div>
+
+    <div class="sec-label">Speakers</div>
+    <div class="card-list">
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-title">Warn if speaker is busy</div>
+          <div class="setting-sub">Ask before interrupting active playback</div>
+        </div>
+        <div class="toggle on" id="tgl3" onclick="toggleSetting('tgl3')"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-title">Break groups on select</div>
+          <div class="setting-sub">Prompt before removing from existing group</div>
+        </div>
+        <div class="toggle on" id="tgl4" onclick="toggleSetting('tgl4')"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-title">Re-scan interval</div>
+          <div class="setting-sub">UPnP M-SEARCH every 30 s</div>
+        </div>
+        <span style="font-size:12px;color:var(--g400);font-family:var(--mono)">30s</span>
+      </div>
+    </div>
+
+    <div class="sec-label">Network</div>
+    <div class="card-list">
+      <div class="card-row" onclick="showSheet('sheetWifi')">
+        <div class="row-icon">
+          <svg viewBox="0 0 20 20"><path d="M2 7a12 12 0 0 1 16 0"/><path d="M5 11a7 7 0 0 1 10 0"/><path d="M8 15a3 3 0 0 1 4 0"/><circle cx="10" cy="18" r="1" fill="var(--g500)" stroke="none"/></svg>
+        </div>
+        <div class="row-body">
+          <div class="row-title">WiFi network</div>
+          <div class="row-sub" id="wifiSub">HomeNetwork_5G</div>
+        </div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,4 10,8 6,12"/></svg>
+      </div>
+      <div class="card-row" onclick="showSheet('sheetApi')">
+        <div class="row-icon">
+          <svg viewBox="0 0 20 20"><rect x="3" y="6" width="14" height="10" rx="2"/><path d="M7 6V4a3 3 0 0 1 6 0v2"/><path d="M8 11h1m2 0h1"/></svg>
+        </div>
+        <div class="row-body">
+          <div class="row-title">REST API</div>
+          <div class="row-sub">http://sonosbridge.local/api</div>
+        </div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,4 10,8 6,12"/></svg>
+      </div>
+      <div class="setting-row">
+        <div class="setting-left">
+          <div class="setting-title">mDNS hostname</div>
+          <div class="setting-sub">sonosbridge.local</div>
+        </div>
+        <span style="font-size:12px;color:var(--g400);font-family:var(--mono)">OK</span>
+      </div>
+    </div>
+
+    <div class="sec-label">Danger zone</div>
+    <div class="card-list">
+      <div class="card-row" onclick="showSheet('sheetReset')">
+        <div class="row-icon red">
+          <svg viewBox="0 0 20 20"><path d="M10 3v7"/><path d="M6.3 5.3A7 7 0 1 0 13.7 5.3"/></svg>
+        </div>
+        <div class="row-body">
+          <div class="row-title" style="color:var(--red)">Factory reset</div>
+          <div class="row-sub">Clears all pairings and settings</div>
+        </div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,4 10,8 6,12"/></svg>
+      </div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       BOTTOM NAV
+  ══════════════════════════════════════ -->
+  <div class="nav">
+    <button class="nav-tab active" id="navSpeakers" onclick="goTab('speakers')">
+      <svg viewBox="0 0 22 22"><rect x="3" y="8" width="16" height="11" rx="3"/><path d="M7 8V6a4 4 0 0 1 8 0v2"/><circle cx="11" cy="13.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+      <span>Rooms</span>
+    </button>
+    <button class="nav-tab" id="navStream" onclick="goTab('stream')">
+      <svg viewBox="0 0 22 22"><path d="M5 12a6 6 0 0 1 6-6m6 6a6 6 0 0 1-6 6"/><path d="M2 12a9 9 0 0 1 9-9m9 9a9 9 0 0 1-9 9"/><circle cx="11" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
+      <span>Stream</span>
+    </button>
+    <button class="nav-tab" id="navSettings" onclick="goTab('settings')">
+      <svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="3"/><path d="M11 2v2m0 14v2M2 11h2m14 0h2m-3.2-6.8-1.4 1.4M5.6 16.4l-1.4 1.4M18.4 16.4l-1.4-1.4M5.6 5.6 4.2 4.2"/></svg>
+      <span>Settings</span>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     SHEETS (MODALS)
+══════════════════════════════════════ -->
+
+<!-- SCAN -->
+<div class="sheet-backdrop" id="sheetScan" onclick="closeSheet(event,'sheetScan')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Scanning for speakers…</div>
+    <div class="scan-center" id="scanBody">
+      <div class="scan-ring"></div>
+      <div class="scan-text">Sending UPnP M-SEARCH<br>on 239.255.255.250:1900</div>
+    </div>
+    <div class="sheet-body">
+      <div class="btn-row" style="padding:0 0 4px">
+        <button class="btn btn-outline fw" onclick="finishScan()">Done scanning</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAIR -->
+<div class="sheet-backdrop" id="sheetPair" onclick="closeSheet(event,'sheetPair')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Bluetooth pairing</div>
+    <div class="pair-center" id="pairBody">
+      <div class="pair-icon">
+        <svg viewBox="0 0 32 32"><path d="M16 6l6 6-6 6"/><path d="M10 8l6 6-6 6"/><path d="M16 14v12"/><path d="M16 26l6-6"/><path d="M16 26l-6-6"/></svg>
+      </div>
+      <div class="pair-title">Pair your Android phone</div>
+      <div class="pair-sub">Open Bluetooth settings on your phone and connect to:</div>
+      <div class="pair-name-box">SonosBridge</div>
+      <div class="pair-sub" style="margin-top:6px">The BM83 module will appear as a standard Bluetooth speaker. Pair once — it's saved permanently.</div>
+    </div>
+    <div class="sheet-body">
+      <div id="pairSimBtn">
+        <div class="btn-row" style="padding:0 0 4px">
+          <button class="btn btn-green fw" onclick="simulatePair()">Simulate pairing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BUSY SPEAKER -->
+<div class="sheet-backdrop" id="sheetBusy" onclick="closeSheet(event,'sheetBusy')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Speaker is busy</div>
+    <div class="sheet-body">
+      <div class="warn-banner">
+        <svg viewBox="0 0 16 16"><path d="M8 2L14 13H2L8 2z"/><path d="M8 7v3m0 2v.5"/></svg>
+        <span><strong id="busyRoomName">Living Room</strong> is currently playing. Streaming will interrupt it.</span>
+      </div>
+      <p style="font-size:13px;color:var(--g500);line-height:1.55;margin-bottom:14px">The bridge detected active PLAYING state via UPnP GetTransportInfo. Do you want to replace the current source?</p>
+      <div class="btn-row" style="padding:0 0 4px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeSheet(null,'sheetBusy')">Cancel</button>
+        <button class="btn btn-green" style="flex:1" onclick="confirmBusy()">Replace</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GROUPED SPEAKER -->
+<div class="sheet-backdrop" id="sheetGroup" onclick="closeSheet(event,'sheetGroup')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Speaker is in a group</div>
+    <div class="sheet-body">
+      <div class="warn-banner">
+        <svg viewBox="0 0 16 16"><path d="M8 2L14 13H2L8 2z"/><path d="M8 7v3m0 2v.5"/></svg>
+        <span><strong id="groupRoomName">Kitchen</strong> is a follower in an existing Sonos group.</span>
+      </div>
+      <p style="font-size:13px;color:var(--g500);line-height:1.55;margin-bottom:14px">Direct play commands are ignored by followers. The bridge can send <code style="font-family:var(--mono);font-size:12px;background:var(--g100);padding:1px 4px;border-radius:3px">BecomeCoordinatorOfStandaloneGroup</code> to break it free first.</p>
+      <div class="btn-row" style="padding:0 0 4px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeSheet(null,'sheetGroup')">Cancel</button>
+        <button class="btn btn-green" style="flex:1" onclick="confirmGroup()">Break &amp; add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WIFI -->
+<div class="sheet-backdrop" id="sheetWifi" onclick="closeSheet(event,'sheetWifi')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">WiFi network</div>
+    <div class="sheet-body">
+      <p>WiFi credentials are set in <code style="font-family:var(--mono);font-size:12px;background:var(--g100);padding:1px 5px;border-radius:3px">config.h</code> before flashing, or via the captive portal on first boot. The device cannot change networks over-the-air without a reflash.</p>
+      <div class="card-list" style="margin:12px 0 0">
+        <div class="setting-row">
+          <div class="setting-left"><div class="setting-title">SSID</div></div>
+          <span style="font-size:13px;font-family:var(--mono);color:var(--g700)">HomeNetwork_5G</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-left"><div class="setting-title">IP address</div></div>
+          <span style="font-size:13px;font-family:var(--mono);color:var(--g700)">192.168.1.142</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-left"><div class="setting-title">Signal</div></div>
+          <span style="font-size:13px;color:var(--green);font-weight:500">-58 dBm</span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-left"><div class="setting-title">Stream port</div></div>
+          <span style="font-size:13px;font-family:var(--mono);color:var(--g700)">:8080</span>
+        </div>
+      </div>
+      <div class="btn-row" style="padding:12px 0 4px">
+        <button class="btn btn-outline fw" onclick="closeSheet(null,'sheetWifi')">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API -->
+<div class="sheet-backdrop" id="sheetApi" onclick="closeSheet(event,'sheetApi')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">REST API</div>
+    <div class="sheet-body">
+      <p>All endpoints are available on the local network. Use these from Home Assistant or any HTTP client.</p>
+      <div class="card-list" style="margin:12px 0 0">
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:2px">
+          <div style="font-size:12px;font-family:var(--mono);color:var(--green)">GET /api/speakers</div>
+          <div style="font-size:12px;color:var(--g400)">List all discovered UPnP speakers</div>
+        </div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:2px">
+          <div style="font-size:12px;font-family:var(--mono);color:var(--green)">POST /api/stream/start</div>
+          <div style="font-size:12px;color:var(--g400)">Begin streaming to selected rooms</div>
+        </div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:2px">
+          <div style="font-size:12px;font-family:var(--mono);color:var(--green)">POST /api/stream/stop</div>
+          <div style="font-size:12px;color:var(--g400)">Stop streaming, send UPnP Stop</div>
+        </div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:2px">
+          <div style="font-size:12px;font-family:var(--mono);color:var(--green)">POST /api/volume</div>
+          <div style="font-size:12px;color:var(--g400)">Set volume · body: {room, value}</div>
+        </div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:2px">
+          <div style="font-size:12px;font-family:var(--mono);color:var(--green)">GET /api/status</div>
+          <div style="font-size:12px;color:var(--g400)">BT, WiFi, sync state as JSON</div>
+        </div>
+      </div>
+      <div class="btn-row" style="padding:12px 0 4px">
+        <button class="btn btn-outline fw" onclick="closeSheet(null,'sheetApi')">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESET -->
+<div class="sheet-backdrop" id="sheetReset" onclick="closeSheet(event,'sheetReset')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Factory reset</div>
+    <div class="sheet-body">
+      <div class="warn-banner">
+        <svg viewBox="0 0 16 16"><path d="M8 2L14 13H2L8 2z"/><path d="M8 7v3m0 2v.5"/></svg>
+        <span>This will erase all Bluetooth pairings, WiFi credentials, and saved room configurations from NVS flash.</span>
+      </div>
+      <div class="btn-row" style="padding:12px 0 4px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeSheet(null,'sheetReset')">Cancel</button>
+        <button class="btn btn-danger" style="flex:1" onclick="doReset()">Reset device</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DISCONNECT WARNING -->
+<div class="sheet-backdrop" id="sheetDisconnect" onclick="closeSheet(event,'sheetDisconnect')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Phone disconnected</div>
+    <div class="sheet-body">
+      <div class="warn-banner" style="background:var(--blue-light);border-color:rgba(59,130,246,.25);color:#1e40af">
+        <svg viewBox="0 0 16 16" style="stroke:#3b82f6"><circle cx="8" cy="8" r="6"/><path d="M8 5v4m0 2v.5"/></svg>
+        <span>Bluetooth A2DP stream dropped. A Stop command has been sent to all active speakers.</span>
+      </div>
+      <p style="font-size:13px;color:var(--g500);line-height:1.55;margin-bottom:14px">When your phone reconnects, streaming will auto-resume to the same rooms. No action needed for brief disconnections.</p>
+      <div class="btn-row" style="padding:0 0 4px">
+        <button class="btn btn-green fw" onclick="closeSheet(null,'sheetDisconnect');showToast('Waiting for reconnect…')">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────
+// MOCK DATA
+// ─────────────────────────────────────
+const ROOMS = [
+  { id: 'r1', name: 'Living Room',  model: 'Sonos Era 300',    state: 'STOPPED',  group: null },
+  { id: 'r2', name: 'Kitchen',      model: 'Sonos Era 100',    state: 'PLAYING',  group: null },
+  { id: 'r3', name: 'Bedroom',      model: 'Sonos Play:1',     state: 'STOPPED',  group: 'r1' },
+  { id: 'r4', name: 'Office',       model: 'Denon HEOS 3',     state: 'STOPPED',  group: null },
+  { id: 'r5', name: 'Garden',       model: 'Sonos Move 2',     state: 'STOPPED',  group: null },
+];
+
+const ROOM_ICONS = {
+  'Living Room': `<svg viewBox="0 0 20 20"><rect x="2" y="9" width="16" height="8" rx="2"/><path d="M5 9V7a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v2"/><path d="M2 13h16"/></svg>`,
+  'Kitchen':     `<svg viewBox="0 0 20 20"><path d="M4 4v5a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4V4"/><path d="M10 13v4"/><path d="M7 17h6"/></svg>`,
+  'Bedroom':     `<svg viewBox="0 0 20 20"><rect x="2" y="10" width="16" height="7" rx="2"/><path d="M2 13h16"/><rect x="5" y="7" width="4" height="3" rx="1"/><rect x="11" y="7" width="4" height="3" rx="1"/><path d="M2 10V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg>`,
+  'Office':      `<svg viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="10" rx="2"/><path d="M7 17h6m-3-4v4"/></svg>`,
+  'Garden':      `<svg viewBox="0 0 20 20"><path d="M10 17V9"/><path d="M10 9C10 9 7 6 4 7s0 4 3 3"/><path d="M10 9c0 0 3-3 6-2s0 4-3 3"/><path d="M10 14c0 0-2-2-4-1s-1 3 4 4c5-1 5-3 4-4s-4-1-4 1z" fill="var(--g100)" stroke="var(--g400)"/></svg>`,
+};
+
+// ─────────────────────────────────────
+// STATE
+// ─────────────────────────────────────
+let selected = new Set();
+let streaming = false;
+let btPaired = false;
+let pendingQueue = [];
+let volumes = { group: 72, r1: 80, r2: 60, r3: 70, r4: 65, r5: 55 };
+
+// ─────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────
+function goTab(tab) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  document.getElementById('nav' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+}
+
+// ─────────────────────────────────────
+// RENDER ROOMS
+// ─────────────────────────────────────
+function renderRooms() {
+  const list = document.getElementById('roomList');
+  list.innerHTML = '';
+  ROOMS.forEach(room => {
+    const isSelected = selected.has(room.id);
+    const row = document.createElement('div');
+    row.className = 'card-row';
+    row.id = 'row_' + room.id;
+
+    let subText = room.model;
+    let tag = '';
+    if (room.state === 'PLAYING') {
+      subText = room.model + ' · playing';
+      tag = '<span class="badge amber"><svg viewBox="0 0 10 10"><polygon points="2,1 8,5 2,9" fill="currentColor" stroke="none"/></svg>busy</span>';
+    }
+    if (room.group) {
+      tag = '<span class="badge" style="background:var(--blue-light);color:#1e3a8a">in group</span>';
+    }
+
+    row.innerHTML = `
+      <div class="row-icon ${isSelected ? 'green' : ''}">${ROOM_ICONS[room.name] || ROOM_ICONS['Office']}</div>
+      <div class="row-body">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div class="row-title">${room.name}</div>${tag}
+        </div>
+        <div class="row-sub">${subText}</div>
+      </div>
+      <div class="check ${isSelected ? 'on' : ''}">
+        <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+      </div>`;
+    row.onclick = () => handleRoomTap(room.id);
+    list.appendChild(row);
+  });
+  updateSelBar();
+}
+
+function handleRoomTap(id) {
+  const room = ROOMS.find(r => r.id === id);
+
+  // warn if in group
+  if (!selected.has(id) && room.group) {
+    document.getElementById('groupRoomName').textContent = room.name;
+    pendingQueue.push({ action: 'selectAfterGroup', id });
+    showSheet('sheetGroup');
+    return;
+  }
+  // warn if busy
+  if (!selected.has(id) && room.state === 'PLAYING') {
+    document.getElementById('busyRoomName').textContent = room.name;
+    pendingQueue.push({ action: 'selectAfterBusy', id });
+    showSheet('sheetBusy');
+    return;
+  }
+  toggleRoom(id);
+}
+
+function toggleRoom(id) {
+  if (selected.has(id)) selected.delete(id);
+  else selected.add(id);
+  renderRooms();
+}
+
+function confirmBusy() {
+  closeSheet(null, 'sheetBusy');
+  const job = pendingQueue.shift();
+  if (job) { toggleRoom(job.id); showToast('Interrupting current playback…'); }
+}
+
+function confirmGroup() {
+  closeSheet(null, 'sheetGroup');
+  const job = pendingQueue.shift();
+  if (job) {
+    const room = ROOMS.find(r => r.id === job.id);
+    room.group = null;
+    toggleRoom(job.id);
+    showToast(`${room.name} removed from group`);
+  }
+}
+
+function updateSelBar() {
+  const bar = document.getElementById('selBar');
+  const btn = document.getElementById('btnStream');
+  const count = selected.size;
+  if (count > 0) {
+    bar.style.display = 'flex';
+    document.getElementById('selBarText').textContent = `${count} room${count > 1 ? 's' : ''} selected`;
+    btn.disabled = false;
+  } else {
+    bar.style.display = 'none';
+    btn.disabled = true;
+  }
+}
+
+// ─────────────────────────────────────
+// STREAMING
+// ─────────────────────────────────────
+function startStreaming() {
+  if (selected.size === 0) return;
+  streaming = true;
+  renderStreamView();
+  goTab('stream');
+  updateTopChip();
+  showToast('Streaming started');
+}
+
+function stopStreaming() {
+  streaming = false;
+  updateTopChip();
+  document.getElementById('streamActive').style.display = 'none';
+  document.getElementById('streamIdle').style.display = 'block';
+  showToast('Stopped · UPnP Stop sent');
+}
+
+function renderStreamView() {
+  document.getElementById('streamIdle').style.display = 'none';
+  document.getElementById('streamActive').style.display = 'block';
+
+  // source label
+  const names = [...selected].map(id => ROOMS.find(r => r.id === id)?.name).filter(Boolean);
+  document.getElementById('npSource').textContent = `${names.length} room${names.length > 1 ? 's' : ''} · via Bluetooth → HTTP`;
+
+  // badges
+  const badgeEl = document.getElementById('npBadges');
+  const syncType = selected.size > 1 ? 'coordinator sync' : 'direct';
+  badgeEl.innerHTML = `
+    <span class="badge green"><svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="3" fill="currentColor" stroke="none"/></svg>BT connected</span>
+    <span class="badge green">WiFi OK</span>
+    <span class="badge">${syncType}</span>
+    <span class="badge">SBC · 44.1kHz</span>`;
+
+  // chips
+  const chips = document.getElementById('activeChips');
+  chips.innerHTML = [...selected].map(id => {
+    const r = ROOMS.find(x => x.id === id);
+    const isCoord = selected.size > 1 && [...selected][0] === id;
+    return `<div class="chip active">${isCoord ? '<svg viewBox="0 0 10 10"><polygon points="2,2 8,5 2,8" fill="currentColor" stroke="none"/></svg>' : '<svg viewBox="0 0 10 10"><polyline points="2,5 4,7 8,3"/></svg>'}${r.name}${isCoord ? ' (coord)' : ''}</div>`;
+  }).join('');
+
+  // volumes
+  renderVolumes();
+}
+
+function renderVolumes() {
+  const vol = document.getElementById('volSection');
+  const activeRooms = [...selected].map(id => ROOMS.find(r => r.id === id));
+  let html = '';
+  if (selected.size > 1) {
+    html += `
+      <div class="vol-row">
+        <div class="vol-name group">All rooms</div>
+        <div class="vol-track"><input type="range" min="0" max="100" value="${volumes.group}" step="1" id="vol_group" oninput="updateVol('group',this.value)"></div>
+        <div class="vol-val" id="vval_group">${volumes.group}%</div>
+      </div>
+      <div class="vol-divider"></div>`;
+  }
+  activeRooms.forEach(r => {
+    html += `
+      <div class="vol-row">
+        <div class="vol-name">${r.name}</div>
+        <div class="vol-track"><input type="range" min="0" max="100" value="${volumes[r.id] || 70}" step="1" id="vol_${r.id}" oninput="updateVol('${r.id}',this.value)"></div>
+        <div class="vol-val" id="vval_${r.id}">${volumes[r.id] || 70}%</div>
+      </div>`;
+  });
+  vol.innerHTML = html;
+}
+
+function updateVol(key, val) {
+  volumes[key] = parseInt(val);
+  const el = document.getElementById('vval_' + key);
+  if (el) el.textContent = val + '%';
+  // if group slider, proportionally adjust all
+  if (key === 'group') {
+    [...selected].forEach(id => {
+      volumes[id] = parseInt(val);
+      const iv = document.getElementById('vol_' + id);
+      const tv = document.getElementById('vval_' + id);
+      if (iv) iv.value = val;
+      if (tv) tv.textContent = val + '%';
+    });
+  }
+}
+
+// ─────────────────────────────────────
+// TOP CHIP
+// ─────────────────────────────────────
+function updateTopChip() {
+  const chip = document.getElementById('topChip');
+  const pulse = document.getElementById('topPulse');
+  const text = document.getElementById('topChipText');
+  if (streaming) {
+    chip.className = 'status-chip streaming';
+    pulse.className = 'pulse active';
+    text.textContent = 'Streaming';
+  } else if (btPaired) {
+    chip.className = 'status-chip';
+    pulse.className = 'pulse on';
+    text.textContent = 'BT paired';
+  } else {
+    chip.className = 'status-chip';
+    pulse.className = 'pulse';
+    text.textContent = 'Idle';
+  }
+}
+
+// ─────────────────────────────────────
+// SCAN
+// ─────────────────────────────────────
+let scanCount = 0;
+function finishScan() {
+  scanCount++;
+  if (scanCount === 1) {
+    // simulate finding a new speaker
+    ROOMS.push({ id: 'r6', name: 'Bathroom', model: 'Sonos Roam 2', state: 'STOPPED', group: null });
+    ROOM_ICONS['Bathroom'] = `<svg viewBox="0 0 20 20"><path d="M4 10h12v4a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-4z"/><path d="M4 10V6a3 3 0 0 1 6 0"/><path d="M2 10h16"/></svg>`;
+    showToast('Found 1 new speaker: Bathroom');
+  } else {
+    showToast('No new speakers found');
+  }
+  closeSheet(null, 'sheetScan');
+  renderRooms();
+}
+
+// ─────────────────────────────────────
+// PAIRING
+// ─────────────────────────────────────
+function simulatePair() {
+  btPaired = true;
+  document.getElementById('btPairSub').textContent = 'Samsung Galaxy S24 · paired';
+  document.getElementById('pairBody').innerHTML = `
+    <div class="pair-icon" style="background:var(--green-light)">
+      <svg viewBox="0 0 32 32" style="stroke:var(--green)"><polyline points="6,16 12,22 26,10" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="pair-title">Paired successfully</div>
+    <div class="pair-sub">Samsung Galaxy S24 is connected. All app audio will now stream to SonosBridge.</div>`;
+  document.getElementById('pairSimBtn').innerHTML = `
+    <div class="btn-row" style="padding:0 0 4px">
+      <button class="btn btn-outline fw" onclick="simulateDisconnect()">Simulate disconnect</button>
+    </div>`;
+  updateTopChip();
+  showToast('Phone paired · BT A2DP active');
+}
+
+function simulateDisconnect() {
+  closeSheet(null, 'sheetPair');
+  setTimeout(() => {
+    if (streaming) { stopStreaming(); }
+    btPaired = false;
+    updateTopChip();
+    showSheet('sheetDisconnect');
+  }, 200);
+}
+
+// ─────────────────────────────────────
+// SETTINGS
+// ─────────────────────────────────────
+function toggleSetting(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('on');
+}
+
+// ─────────────────────────────────────
+// RESET
+// ─────────────────────────────────────
+function doReset() {
+  closeSheet(null, 'sheetReset');
+  btPaired = false;
+  selected.clear();
+  streaming = false;
+  ROOMS.splice(5); // remove dynamically added
+  delete ROOM_ICONS['Bathroom'];
+  scanCount = 0;
+  document.getElementById('btPairSub').textContent = 'No device paired';
+  document.getElementById('pairBody').innerHTML = `
+    <div class="pair-icon">
+      <svg viewBox="0 0 32 32"><path d="M16 6l6 6-6 6"/><path d="M10 8l6 6-6 6"/><path d="M16 14v12"/><path d="M16 26l6-6"/><path d="M16 26l-6-6"/></svg>
+    </div>
+    <div class="pair-title">Pair your Android phone</div>
+    <div class="pair-sub">Open Bluetooth settings on your phone and connect to:</div>
+    <div class="pair-name-box">SonosBridge</div>
+    <div class="pair-sub" style="margin-top:6px">The BM83 module will appear as a standard Bluetooth speaker. Pair once — it's saved permanently.</div>`;
+  document.getElementById('pairSimBtn').innerHTML = `
+    <div class="btn-row" style="padding:0 0 4px">
+      <button class="btn btn-green fw" onclick="simulatePair()">Simulate pairing</button>
+    </div>`;
+  stopStreaming();
+  updateTopChip();
+  renderRooms();
+  showToast('Device reset · all data cleared');
+}
+
+// ─────────────────────────────────────
+// SHEETS
+// ─────────────────────────────────────
+function showSheet(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeSheet(e, id) {
+  if (e && e.target !== document.getElementById(id)) return;
+  document.getElementById(id).classList.remove('open');
+}
+
+// ─────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ─────────────────────────────────────
+// INIT
+// ─────────────────────────────────────
+renderRooms();
+</script>
+</body>
+</html>
