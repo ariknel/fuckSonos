@@ -2,7 +2,28 @@
 
 > Stream **any** Android audio — YouTube, Instagram, radio apps, anything — to your Sonos speakers. No app required. No "Cast" button needed. Controlled via a web UI from any browser on your network.
 
-Android users shouldn't need a specific "Sonos" button in every app. This project turns an ESP32-S3 into a Bluetooth A2DP receiver that re-broadcasts audio as an HTTP stream your Sonos speakers can pull from — a DIY "virtual Line-In." Speaker selection, volume, and grouping are managed through a responsive web interface served directly from the device.
+Android users shouldn't need a specific "Sonos" button in every app. This project turns an ESP32-S3 into a Bluetooth A2DP receiver that re-broadcasts audio as an HTTP stream your WiFi speakers can pull from — a DIY "virtual Line-In." Speaker selection, volume, and grouping are managed through a responsive web interface served directly from the device.
+
+---
+
+## The problem this solves
+
+Every major multiroom speaker platform — Sonos, Denon HEOS, Yamaha MusicCast, Bluesound BluOS, Bose SoundTouch, Samsung SmartThings Audio — shares the same fundamental design philosophy: **they decide what you can play, not you.**
+
+Each platform maintains its own curated list of supported streaming services and its own cast protocol. If your app isn't on their approved list, you're out of luck. As an Android user, your options typically boil down to:
+
+- **Spotify → Sonos**: works, via Spotify Connect
+- **YouTube Music → Sonos**: works, via Chromecast (on compatible models only)
+- **Random internet radio app → Sonos**: doesn't work
+- **Instagram Reels audio → Sonos**: doesn't work
+- **A podcast app that hasn't partnered with Sonos → Sonos**: doesn't work
+- **System audio, game sounds, anything else → Sonos**: doesn't work
+
+Apple users get a partial escape hatch via AirPlay 2, which acts as a system-level cast protocol accepted by most of these platforms. **Android has no equivalent.** Google Cast/Chromecast is supported by some platforms but not all, and it still requires the specific app to implement a Cast button. There is no Android mechanism that says "send *all* phone audio to these speakers."
+
+The platforms are aware of this gap. They've chosen not to fill it because a walled garden protects their service integrations, keeps users inside their own app, and justifies the premium hardware price. Sonos has faced years of community complaints about arbitrary app support. HEOS, MusicCast, and Bluesound have the same limitation with slightly different boundaries. Bose discontinued its SoundTouch line entirely, migrating to a model that leans on AirPlay 2 and Alexa — which still doesn't help Android users wanting arbitrary audio routing. Yamaha's MusicCast is locked to Yamaha hardware only. Samsung's emerging Music Studio line is yet another closed ecosystem.
+
+This bridge sidesteps the entire problem. It pairs with your phone as a Bluetooth speaker — receiving *all* audio from any app at the OS level — then re-streams it over the same UPnP/HTTP protocol those speakers already use for everything else. The speakers don't know or care where the stream originates.
 
 ---
 
@@ -312,6 +333,40 @@ See [`BUILD_PLAN.md`](./BUILD_PLAN.md) for detailed tasks and time estimates per
 
 ---
 
+## Speaker compatibility
+
+The bridge uses **UPnP AV / DLNA** (specifically UPnP SetAVTransportURI + SOAP control) to tell speakers to pull the HTTP audio stream. This is a well-established open standard supported across the WiFi speaker market — not just Sonos.
+
+### Confirmed compatible ecosystems
+
+| Brand / Platform | Protocol | Multi-room sync | Notes |
+|---|---|---|---|
+| **Sonos** (all models) | UPnP/SOAP | ✅ Full coordinator/follower | Era, Arc, Play:1–5, Beam, Move, Roam, all older units |
+| **Denon HEOS** (Home 150/250/350, HEOS 1–7) | UPnP/DLNA | ⚠️ Single-room reliable; HEOS group sync proprietary | Also built into Denon/Marantz AV receivers |
+| **Yamaha MusicCast** | UPnP/DLNA | ⚠️ Single-room only | MusicCast group sync is proprietary and closed |
+| **Bluesound BluOS** (Node, Pulse, etc.) | UPnP/DLNA | ⚠️ Single-room only | BluOS group sync is proprietary |
+| **WiiM** (Mini, Pro, Ultra) | UPnP/DLNA | ⚠️ Single-room only | Excellent UPnP implementation, fast startup |
+| **Bose SoundTouch** (legacy hardware) | UPnP + SSDP | ❌ | Cloud discontinued 2026; local LAN still works |
+| **Generic DLNA** (Denon/Marantz AVRs, Onkyo, Pioneer, Sony, LG/Samsung TVs) | UPnP/DLNA | ❌ | Single-room; quality varies by firmware |
+
+### What "works" actually means
+
+**Single-room playback** is simple: if a device appears as a UPnP/DLNA renderer on your network (it will show up in apps like BubbleUPnP), it will work with this bridge. The bridge tells it a URL, it fetches the stream and plays it. That covers every device in the table above.
+
+**Synchronised multi-room** is where ecosystems diverge sharply. Sonos uses a coordinator/follower model that is documented and accessible via SOAP — the bridge implements this fully. HEOS, MusicCast, and Bluesound each have proprietary group-sync protocols that are not publicly documented at the SOAP level. For those platforms, the bridge plays to multiple speakers independently, which will drift out of sync. If you need sync on non-Sonos hardware, use a single bridge → single speaker and let the platform's own app handle grouping within its ecosystem separately.
+
+> **HEOS users:** Denon began phasing out the HEOS standalone speaker line in 2025. Existing units keep working. The HEOS stack is still present in Denon and Marantz AV receivers — these work fine with the bridge for single-room playback.
+
+> **Bose SoundTouch users:** Bose ended cloud services for SoundTouch in 2026, making the official app non-functional. Local LAN UPnP playback still works. This bridge uses only local UPnP and is unaffected by the cloud shutdown — ironically making it one of the last practical ways to get audio into SoundTouch hardware.
+
+> **Yamaha MusicCast users:** MusicCast is locked to Yamaha hardware only and its group-sync protocol is closed. Single-room bridge → MusicCast speaker works fine. For multi-room, use the MusicCast app to group speakers first, then point the bridge at the MusicCast group master.
+
+### Why the README focuses on Sonos
+
+Sonos is used as the primary example because it has the most complete and consistent UPnP/SOAP implementation in the consumer market, making the coordinator-based multi-room sync reliable and testable. The core mechanism — ESP32-S3 serves an HTTP audio stream, UPnP tells the speaker to pull it — is ecosystem-agnostic. `http_stream.cpp` and the UPnP discovery module work with any UPnP AV renderer. Only `sonos_groups.cpp` is Sonos-specific. Contributions adding HEOS or MusicCast group-sync support are welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
+---
+
 ## FAQ
 
 **Why not use the classic ESP32 with its built-in Bluetooth?**
@@ -320,8 +375,8 @@ You can — and it's simpler. The classic ESP32 (WROOM-32E) has native A2DP and 
 **Why the BM83 and not the CSR8645?**
 The CSR8645 is cheap and everywhere, but its firmware is essentially closed. There's no reliable way to command it over UART from a host MCU — it functions as a standalone audio endpoint, not a controllable peripheral. The BM83 has a proper UART host command set (full datasheet + SDK from Microchip) and was designed for exactly this kind of embedded integration.
 
-**Does it work with all Sonos speakers?**
-Yes — all Sonos speakers support UPnP/SOAP. This includes Era, Five, Arc, Play:1, Play:3, Play:5, Beam, Move, Roam, and all older units.
+**Does it work with speakers other than Sonos?**
+Yes — see the [Speaker compatibility](#speaker-compatibility) section above. Any UPnP/DLNA renderer works for single-room playback. Sonos is the only platform with fully supported multi-room sync; other ecosystems (HEOS, MusicCast, Bluesound, WiiM) work in single-room mode.
 
 **What audio quality?**
 A2DP SBC at 44.1 kHz stereo. The BM83 also supports AAC if your phone negotiates it. Fine for music.
